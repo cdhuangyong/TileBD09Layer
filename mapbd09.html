@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<link rel="stylesheet" type="text/css" href="./mapbox-gl.css">
+	<style type="text/css">
+		*{
+			margin: 0;
+			padding: 0;
+			list-style: none;
+		}
+		html,body,#map{
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+		}
+	</style>
+	<script type="text/javascript" src="./mapbox-gl-dev.js"></script>
+	<script type="text/javascript" src="./coordtransform.js"></script>
+	<script type="text/javascript" src="./BDTool.js"></script>
+	<script type="text/javascript" src="./TileBD09Layer.js"></script>
+</head>
+<body>
+  <div id="map" ></div>
+</body>
+<script type="text/javascript">
+	//mapboxgl.accessToken = 'pk.eyJ1IjoiZXhhbXBsZXMiLCJhIjoiY2p0MG01MXRqMW45cjQzb2R6b2ptc3J4MSJ9.zA2W0IkI0c6KaAhJfk9bWg';
+	var map = new mapboxgl.Map({
+	  container: 'map',
+	  center:  [107.51335144042969, 26.27496910095215],
+	  zoom: 12,
+	  fadeDuration:0,
+	  style: {
+		"version":8,
+		"name":"Positron",
+		"metadata":{},
+		//"sprite":"http://10.0.3.96:8085/styles/positron/sprite",
+		//"glyphs":"http://10.0.3.96:8085/fonts/{fontstack}/{range}.pbf",
+		//local
+		//"glyphs":"/static/fonts/{fontstack}/{range}.pbf",
+		//service
+		"glyphs":"fonts/{fontstack}/{range}.pbf",
+		"sources":{},
+		"layers":[]
+	},
+	hash: false,
+	  
+	});
+	map.on('load', function() {
+
+		map.addSource("geoq",{
+			type:"raster",
+			tiles:[
+				"https://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=755a7d8636035a8308201503309c944f",
+				"https://t1.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=755a7d8636035a8308201503309c944f",
+				"https://t2.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=755a7d8636035a8308201503309c944f"
+			],
+			tileSize:256
+		});
+
+		// map.addLayer({
+		// 	id:"geoq",
+		// 	source:"geoq",
+		// 	type:"raster"
+		// });
+		
+		var tileLayer = new TileBD09Layer({
+			//url:"http://192.168.60.81:8080/EzServer7/Maps/linewell/EzMap?Service=getImage&Type=RGB&ZoomOffset=0&Col={y}&Row={x}&Zoom={z}&V=1.0.0",
+			// url:"https://t2.tianditu.gov.cn/vec_c/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=c&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=755a7d8636035a8308201503309c944f"
+			url:"http://online1.map.bdimg.com/tile/?qt=tile&x={x}&y={y}&z={z}&styles=pl&scaler=2&color_dep=32&colors=50&udt=20180426"
+			//url:"http://maponline0.bdimg.com/tile/?qt=vtile&x={x}&y={y}&z={z}&styles=pl&scaler=1&udt=20200611&from=jsapi2_0"
+		});
+
+		tileLayer.addTo(map);
+
+	});
+</script>
+</html>
