@@ -4,6 +4,18 @@ window.TileBD09Layer = (function(){
 		return value < min ? min : value > max ? max: value
 	}
 
+	function transformMat4(out, a, m) {
+		  var x = a[0],
+		      y = a[1],
+		      z = 0;
+		  var w = m[3] * x + m[7] * y + m[11] * z + m[15];
+		  w = w || 1.0;
+		  out[0] = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w;
+		  out[1] = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w;
+		  out[2] = (m[2] * x + m[6] * y + m[10] * z + m[14]) / w;
+		  return out;
+	}
+
 	var caches = {
 		data:{},
 		get:function(key){
@@ -32,19 +44,27 @@ window.TileBD09Layer = (function(){
 	})();
 
 	var vetexShaderSource = `
+		#ifdef GL_FRAGMENT_PRECISION_HIGH
+			precision highp float;
+		#else
+			precision mediump float;
+		#endif
 		uniform mat4 u_Matrix;
 		uniform vec4 u_Translate;
 		attribute vec3 a_Position;
 		attribute vec2 a_UV;
 		varying vec2 v_UV;
+
 		void main(){
 			v_UV = a_UV;
-			gl_Position = u_Matrix * vec4( (a_Position.xy + u_Translate.xy), 0.0 ,1.0 );
+			gl_Position = vec4( (a_Position.xy + u_Translate.xy), 0.0 ,1.0 );
 		}
 	`;
 
 	var fragmentShaderSource = `
-		#ifdef GL_ES
+		#ifdef GL_FRAGMENT_PRECISION_HIGH
+			precision highp float;
+		#else
 			precision mediump float;
 		#endif
 		varying vec2 v_UV;
@@ -233,6 +253,8 @@ window.TileBD09Layer = (function(){
 				var options = this._options;
 				var tileSize = options.tileSize ||256;
 
+				//matrix = transform.mercatorMatrix1;
+
 				var z  =  transform.coveringZoomLevel({
 					tileSize:tileSize,
 					roundZoom:true
@@ -328,7 +350,7 @@ window.TileBD09Layer = (function(){
 			var startX = sw[0],endX = ne[0];
 			var startY = sw[1],endY = ne[1]; 
 			
-			console.log(this.realz);
+			//console.log(this.realz);
 			
 			// startX = startX < 20 ? 20 : startX;
 			//startY = startY < 1 ?  1 : startY;
@@ -566,12 +588,16 @@ window.TileBD09Layer = (function(){
 		this.worldExtent = layer._extent;
 		this.extent = [0,0,0,0,0,0,0,0];
 		this.translate = [0,0,0,0];
+		this._store = [0,0];
 		this._load();
 	}
 
 	Tile.prototype = {
 		constructor:Tile,
 		calcExtent:function(){
+
+			var transform = this._layer._transform;
+			
 			var x = this._coord[1],y = this._coord[2];
 			var wgs84Bound = this.getWgs84BoundByBaiduRCL(y,x, this.z);
             var swWebgl = mapboxgl.MercatorCoordinate.fromLngLat(wgs84Bound.slice(0,2));
@@ -579,14 +605,23 @@ window.TileBD09Layer = (function(){
             var seWebgl = mapboxgl.MercatorCoordinate.fromLngLat(wgs84Bound.slice(4,6));
             var nwWebgl = mapboxgl.MercatorCoordinate.fromLngLat(wgs84Bound.slice(6,8));
 
-			this.extent[0] = swWebgl.x;
-			this.extent[1] = swWebgl.y;
-			this.extent[2] = neWebgl.x;
-			this.extent[3] = neWebgl.y;
-			this.extent[4] = seWebgl.x;
-			this.extent[5] = seWebgl.y;
-			this.extent[6] = nwWebgl.x;
-			this.extent[7] = nwWebgl.y;
+            var arr = this._store;
+            arr[0] = swWebgl.x,arr[1] = swWebgl.y;
+            transformMat4(arr,arr,transform.mercatorMatrix);
+			this.extent[0] = arr[0];
+			this.extent[1] = arr[1];
+			arr[0] = neWebgl.x,arr[1] = neWebgl.y;
+			transformMat4(arr,arr,transform.mercatorMatrix);
+			this.extent[2] = arr[0];
+			this.extent[3] = arr[1];
+			arr[0] = seWebgl.x,arr[1] = seWebgl.y;
+			transformMat4(arr,arr,transform.mercatorMatrix);
+			this.extent[4] = arr[0];
+			this.extent[5] = arr[1];
+			arr[0] = nwWebgl.x,arr[1] = nwWebgl.y;
+			transformMat4(arr,arr,transform.mercatorMatrix);
+			this.extent[6] = arr[0];
+			this.extent[7] = arr[1];
 		},
 
 		getWgs84BoundByBaiduRCL:function(R, C, L) {
@@ -622,6 +657,9 @@ window.TileBD09Layer = (function(){
 			var z = this._coord[0];
 			var x = this._coord[1];
 			var y = this._coord[2];
+
+			
+
 			var url = this._url.replace("{x}",x).replace("{y}",y).replace("{z}",z);
 
 			this.request = getImage(url,function(img){
