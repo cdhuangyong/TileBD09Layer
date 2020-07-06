@@ -1,3 +1,4 @@
+
 window.TileBD09Layer = (function(){
 
 	function clamp(value,min,max){
@@ -54,7 +55,6 @@ window.TileBD09Layer = (function(){
 		attribute vec3 a_Position;
 		attribute vec2 a_UV;
 		varying vec2 v_UV;
-
 		void main(){
 			v_UV = a_UV;
 			gl_Position = vec4( (a_Position.xy + u_Translate.xy), 0.0 ,1.0 );
@@ -186,12 +186,12 @@ window.TileBD09Layer = (function(){
 						gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
 						var points = this.points;
 
-						points[0] =  ext[4] , points[1] = ext[5], points[2] = 0.0 , 
-						points[3] =  ext[2] , points[4] = ext[3], points[5] = 0.0,  
-						points[6] =  ext[0] , points[7] = ext[1], points[8] = 0.0  ,
-						points[9] =  ext[2] , points[10] = ext[3], points[11] = 0.0 , 
-						points[12] = ext[0], points[13] = ext[1], points[14] = 0.0,  
-						points[15] = ext[6], points[16] = ext[7], points[17] = 0.0 ;
+						points[0] =  ext[6] , points[1] = ext[7], points[2] = 1.0 , 
+						points[3] =  ext[2] , points[4] = ext[3], points[5] = 1.0,  
+						points[6] =  ext[0] , points[7] = ext[1], points[8] = 1.0  ,
+						points[9] =  ext[2] , points[10] = ext[3], points[11] = 1.0 , 
+						points[12] = ext[0], points[13] = ext[1], points[14] = 1.0,  
+						points[15] = ext[4], points[16] = ext[5], points[17] = 1.0 ;
 
 						gl.bufferData(gl.ARRAY_BUFFER,points, gl.STATIC_DRAW);
 						gl.enableVertexAttribArray(this.attribute.location);
@@ -307,13 +307,27 @@ window.TileBD09Layer = (function(){
 		renderTiles(){
 			var gl = this._gl;
 			var tiles = this._tiles;
-			var tile;
+			var tile,extent;
 
 			for(var key in tiles){
 
 				tile = tiles[key];
 
 				tile.calcExtent();
+
+			}
+
+			for (var key in tiles){
+				tile = tiles[key];
+				extent = tile.extent;
+
+				if( (Math.abs(extent[2] - extent[0]) > 2) 
+					//|| (Math.abs(extent[3] - extent[1]) > 2)   
+					|| (Math.abs(extent[6] - extent[4]) > 2)  
+					//|| (Math.abs(extent[7] - extent[5]) > 2) 
+					){
+					continue;
+				}
 
 				this._buffers.aPositionBuffer.update1(tile.extent);
 
@@ -325,9 +339,8 @@ window.TileBD09Layer = (function(){
 					gl.bindTexture(gl.TEXTURE_2D, this.transparentTexture);
 				}
 				gl.uniform1i(this._uniforms.uTexture.location, 0);
-				gl.drawArrays(gl.TRIANGLES, 0, 6);	
+				gl.drawArrays(gl.TRIANGLES, 0, 6);
 			}
-
 		},
 		/**
 		 * 计算当前可视范围内的切片
@@ -602,8 +615,8 @@ window.TileBD09Layer = (function(){
 			var wgs84Bound = this.getWgs84BoundByBaiduRCL(y,x, this.z);
             var swWebgl = mapboxgl.MercatorCoordinate.fromLngLat(wgs84Bound.slice(0,2));
             var neWebgl = mapboxgl.MercatorCoordinate.fromLngLat(wgs84Bound.slice(2,4));
-            var seWebgl = mapboxgl.MercatorCoordinate.fromLngLat(wgs84Bound.slice(4,6));
-            var nwWebgl = mapboxgl.MercatorCoordinate.fromLngLat(wgs84Bound.slice(6,8));
+            var seWebgl = mapboxgl.MercatorCoordinate.fromLngLat(wgs84Bound.slice(4,6)); //new mapboxgl.Point(neWebgl.x,swWebgl.y) //
+            var nwWebgl = mapboxgl.MercatorCoordinate.fromLngLat(wgs84Bound.slice(6,8)); //new mapboxgl.Point(swWebgl.x,neWebgl.y) //
 
             var arr = this._store;
             arr[0] = swWebgl.x,arr[1] = swWebgl.y;
@@ -631,10 +644,10 @@ window.TileBD09Layer = (function(){
 	        var minY = R * tileM;
 	        var maxX = minX + tileM;
 	        var maxY = minY + tileM;
-	        var baiduWgsSW = BDTool.Ab([minX,minY]);
-	        var baiduWgsNE = BDTool.Ab([maxX,maxY]);
-	        var baiduWgsSE = BDTool.Ab([minX, maxY]);
-        	var baiduWgsNW = BDTool.Ab([maxX, minY]);
+	        var baiduWgsSW = BDTool.Ab([minX,maxY]);
+	        var baiduWgsNE = BDTool.Ab([maxX,minY]);
+	        var baiduWgsSE = BDTool.Ab([maxX, maxY]);
+        	var baiduWgsNW = BDTool.Ab([minX, minY]);
 
 	        //console.log(minX + ":" + minY + ":" + baiduWgsSW.lng + ":" + baiduWgsSW.lat + ":" + maxX + ":" + maxY + ":" + baiduWgsNE.lng + ":" + baiduWgsNE.lat);
 	        var guojiaSW = coordtransform.bd09togcj02(baiduWgsSW[0], baiduWgsSW[1]);
@@ -667,7 +680,7 @@ window.TileBD09Layer = (function(){
 				if(_this._gl){
 					var texture = _this.texture = gl.createTexture();
 					gl.bindTexture(gl.TEXTURE_2D, texture);
-					gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+					gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 					gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 					gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
