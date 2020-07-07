@@ -453,7 +453,7 @@ window.TileBD09Layer = (function(){
 
 			var minx , miny , maxx, maxy;
 
-			for(var i = 0,pont = null ; i < bounds.length ; i ++ ){
+			for(var i = 0,point = null ; i < bounds.length ; i ++ ){
 				point = bounds[i];
 				if(i ==  0 ){
 					minx = point.lng;
@@ -690,7 +690,7 @@ window.TileBD09Layer = (function(){
 					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
 					gl.bindTexture(gl.TEXTURE_2D, null);
 					caches.put(z+"/"+x+"/"+y,_this);
-					this.loaded = true;
+					_this.loaded = true;
 					_this._layer.repaint();
 				}
 			});
